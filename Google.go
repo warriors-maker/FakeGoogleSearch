@@ -20,14 +20,14 @@ func fakeSearch(kind string, ch chan string) Search {
 	}
 }
 
-// // Sequential Search
-// func SeqGoogle(query string) []string {
-// 	var s []string
-// 	s = append(s, Web(query).s)
-// 	s = append(s, Image(query).s)
-// 	s = append(s, Video(query).s)
-// 	return s
-// }
+// Sequential Search
+func SeqGoogle(query string) []string {
+	var s []string
+	s = append(s, Web(query).s)
+	s = append(s, Image(query).s)
+	s = append(s, Video(query).s)
+	return s
+}
 
 // Parallel Search
 func ParallelGoogle(query string) []string {
@@ -74,6 +74,12 @@ func PTimeLimitGoogle(query string) []string {
 		}
 	}
 }
+
+// TODO:
+//Need to do the replication part
+// Individual server needs to do go Web, go Video, go Image
+// A channel to communicate between each server with the main
+// if main gets a result return that because it is the most efficient one
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
