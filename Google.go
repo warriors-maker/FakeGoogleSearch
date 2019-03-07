@@ -20,14 +20,14 @@ func fakeSearch(kind string, ch chan string) Search {
 	}
 }
 
-// Sequential Search
-func SeqGoogle(query string) []string {
-	var s []string
-	s = append(s, Web(query).s)
-	s = append(s, Image(query).s)
-	s = append(s, Video(query).s)
-	return s
-}
+// // Sequential Search
+// func SeqGoogle(query string) []string {
+// 	var s []string
+// 	s = append(s, Web(query).s)
+// 	s = append(s, Image(query).s)
+// 	s = append(s, Video(query).s)
+// 	return s
+// }
 
 // Parallel Search
 func ParallelGoogle(query string) []string {
@@ -80,12 +80,50 @@ func PTimeLimitGoogle(query string) []string {
 // Individual server needs to do go Web, go Video, go Image
 // A channel to communicate between each server with the main
 // if main gets a result return that because it is the most efficient one
+func ParallelGoogleReplica(query string, replicaID int) chan []string {
+	quit := make(chan []string)
+	go func() {
+		var s []string
+		ch := make(chan string)
+		var (
+			Web   = fakeSearch("Web", ch)
+			Image = fakeSearch("Image", ch)
+			Video = fakeSearch("Video", ch)
+		)
+		go Web(query)
+		go Image(query)
+		go Video(query)
+		for i := 0; i < 3; i++ {
+			s = append(s, <-ch)
+		}
+		fmt.Printf("Finished in replica %d\n", replicaID)
+		quit <- s
+	}()
+	return quit
+}
+
+// fanIn pattern
+func clientListening(replica1, replica2, replica3 chan []string) {
+	// Only listen for the first value that comes out
+	select {
+	case value1 := <-replica1:
+		fmt.Println(value1)
+	case value2 := <-replica2:
+		fmt.Println(value2)
+	case value3 := <-replica3:
+		fmt.Println(value3)
+	}
+}
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	start := time.Now()
-	result := PTimeLimitGoogle("golang")
+	query := "golang"
+	clientListening(
+		ParallelGoogleReplica(query, 1),
+		ParallelGoogleReplica(query, 2),
+		ParallelGoogleReplica(query, 3),
+	)
 	elapsed := time.Since(start)
-	fmt.Println(result)
 	fmt.Println(elapsed)
 }
